@@ -1,0 +1,9 @@
+34  # pick_heat_then_place_in_recep-Apple-None-Fridge-10 :: put a hot apple in fridge.
+35  # pick_heat_then_place_in_recep-Apple-None-GarbageCan-10 :: put a hot apple in garbagecan.
+36  # pick_heat_then_place_in_recep-Apple-None-SinkBasin-10 :: put a hot apple in sinkbasin.
+37  # pick_heat_then_place_in_recep-Cup-None-Cabinet-10 :: put a hot cup in cabinet.
+38  # pick_heat_then_place_in_recep-Egg-None-GarbageCan-10 :: put a hot egg in garbagecan.
+39  # pick_heat_then_place_in_recep-Mug-None-Cabinet-10 :: put a hot mug in cabinet.
+40  # pick_heat_then_place_in_recep-Mug-None-CoffeeMachine-10 :: put a hot mug in coffeemachine.
+41  # pick_heat_then_place_in_recep-Potato-None-GarbageCan-10 :: put a hot potato in garbagecan.
+42  # pick_heat_then_place_in_recep-Tomato-None-GarbageCan-10 :: put a hot tomato in garbagecan.

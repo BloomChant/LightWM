@@ -1,0 +1,8 @@
+6  # pick_and_place_simple-Mug-None-Desk-308 :: put a mug in desk.
+7  # pick_and_place_simple-Pencil-None-Shelf-308 :: put a pencil in shelf.
+8  # pick_and_place_simple-PepperShaker-None-Drawer-10 :: put a peppershaker in drawer.
+9  # pick_and_place_simple-SaltShaker-None-Cabinet-10 :: put a saltshaker in cabinet.
+10  # pick_and_place_simple-SaltShaker-None-Drawer-10 :: put a saltshaker in drawer.
+11  # pick_and_place_simple-SoapBottle-None-Toilet-424 :: put a soapbottle in toilet.
+12  # pick_and_place_simple-Vase-None-Safe-219 :: put a vase in safe.
+13  # pick_and_place_simple-Watch-None-Safe-219 :: put a watch in safe.

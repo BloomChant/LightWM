@@ -1,0 +1,8 @@
+43  # pick_two_obj_and_place-CD-None-Safe-308 :: put two cd in safe.
+44  # pick_two_obj_and_place-KeyChain-None-Safe-219 :: put two keychain in safe.
+45  # pick_two_obj_and_place-PepperShaker-None-Drawer-10 :: put two peppershaker in drawer.
+46  # pick_two_obj_and_place-Pillow-None-Sofa-219 :: put two pillow in sofa.
+47  # pick_two_obj_and_place-SoapBar-None-Cabinet-424 :: put two soapbar in cabinet.
+48  # pick_two_obj_and_place-SoapBar-None-GarbageCan-424 :: put two soapbar in garbagecan.
+49  # pick_two_obj_and_place-ToiletPaper-None-Cabinet-424 :: put two toiletpaper in cabinet.
+

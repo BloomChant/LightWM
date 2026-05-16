@@ -1,0 +1,6 @@
+0  # look_at_obj_in_light-AlarmClock-None-DeskLamp-308 :: examine the alarmclock with the desklamp.
+1  # look_at_obj_in_light-Book-None-DeskLamp-308 :: examine the book with the desklamp.
+2  # look_at_obj_in_light-Bowl-None-DeskLamp-308 :: examine the bowl with the desklamp.
+3  # look_at_obj_in_light-CD-None-DeskLamp-308 :: examine the cd with the desklamp.
+4  # look_at_obj_in_light-Mug-None-DeskLamp-308 :: examine the mug with the desklamp.
+5  # look_at_obj_in_light-Pencil-None-DeskLamp-308 :: examine the pencil with the desklamp.

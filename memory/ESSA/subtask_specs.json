@@ -1,0 +1,779 @@
+{
+  "MOVE_OBJECT_TO_RECEP": {
+    "goal_template": "{target_object} on {target_receptacle}",
+    "output_para": [
+      "moved_target_object_location"
+    ],
+    "done_when_all": [
+      "return.moved_target_object_location"
+    ],
+    "base_actions": [
+      {
+        "action": "go to <receptacle>",
+        "when": "Go to the concrete destination id memory.target_receptacle_id (do NOT move before arriving)."
+      },
+      {
+        "action": "open <receptacle>",
+        "when": "If the target receptacle is a container and observation says it is closed, open it before moving."
+      },
+      {
+        "action": "move <object> to <receptacle>",
+        "when": "ONLY when observation indicates you are at the destination. Use a concrete object id from inventory_snapshot, and use memory.target_receptacle_id as destination."
+      },
+      {
+        "action": "inventory",
+        "when": "Optional: confirm you still carry the object before moving. (Do NOT use 'take' in this subtask.)"
+      }
+    ],
+    "executor_sys_rules": [
+      "If core.agent_position is not <memory.target_receptacle_id>, you MUST output: go to <memory.target_receptacle_id> (do NOT move before arriving).",
+      "If observation contains '<id> is closed', you MUST output: open <id> before moving into it.",
+      "You MUST output: move <FIRST element of memory.inventory_snapshot> to <memory.target_receptacle_id> ONLY when you are at the destination. Evidence is either: (A) observation contains \"You arrive at <memory.target_receptacle_id>.\" OR (B) core.agent_position == <memory.target_receptacle_id>. NEVER use 'take'."
+    ],
+    "caller_mapping": {
+      "inject_context_from_task_state": [],
+      "map_context_to_memory": [
+        {
+          "from": "target_object",
+          "to": "target_object"
+        },
+        {
+          "from": "target_receptacle",
+          "to": "target_receptacle"
+        },
+        {
+          "from": "target_receptacle_id",
+          "to": "target_receptacle_id"
+        },
+        {
+          "from": "inventory",
+          "to": "inventory_snapshot"
+        }
+      ]
+    },
+    "patch_ops_policy": {
+      "allowed": [
+        {
+          "op": "set",
+          "path": "return.moved_target_object_location"
+        }
+      ]
+    },
+    "sys_output_format": "NOTE: Output JSON only. You do NOT output context.\n\n[OUTPUT PROTOCOL]\n- Return JSON ONLY.\n- Top-level MUST be an object with key \"patch_ops\" (a list).\n- Even for ONE op, you MUST wrap it: {\"patch_ops\":[{...}]}\n- If you output a single op object without \"patch_ops\", the program will DISCARD your update.\n\n[OUTPUT FORMAT]\n{\n  \"patch_ops\": [\n    {\n      \"op\": \"<set>\",\n      \"path\": \"<return.moved_target_object_location>\",\n      \"value\": \"<json value>\"\n    }\n  ]\n}",
+    "operation_space": "set_move_result:\n- precondition: OBSERVATION matches \"You move the <object_id> to the <receptacle_id>.\".\n- function: set return.moved_target_object_location = \"<object_id> at <receptacle_id>\".\n- MUST output: {\"patch_ops\":[{\"op\":\"set\",\"path\":\"return.moved_target_object_location\",\"value\":\"mug 1 at desk 2\"}]}\n\n[SELECTION POLICY]\n- If precondition holds, you MUST output set_move_result.\n- Else output {\"patch_ops\":[]}.",
+    "operation_space_full_state": "set_move_result:\n- precondition: OBSERVATION matches \"You move the <object_id> to the <receptacle_id>.\".\n- state effect: set return.moved_target_object_location = \"<object_id> at <receptacle_id>\" in subtask_state.\n- MUST return full subtask_state with this effect reflected.\n\n[SELECTION POLICY]\n- If precondition holds, you MUST apply set_move_result in the returned subtask_state.\n- Else return subtask_state unchanged.",
+    "subtask_status_schema": {
+      "core": {
+        "subtask_type": "MOVE_OBJECT_TO_RECEP",
+        "status": "running|done|failed",
+        "step_count": 0
+      },
+      "context": {
+        "target_object": null,
+        "target_receptacle": null,
+        "target_receptacle_id": null,
+        "inventory": []
+      },
+      "memory": {
+        "target_object": null,
+        "target_receptacle": null,
+        "target_receptacle_id": null,
+        "inventory_snapshot": []
+      },
+      "return": {
+        "moved_target_object_location": null,
+        "subtask_accomplished": false
+      }
+    }
+  },
+  "SEARCH_OBJECT": {
+    "goal_template": "find location of {target_object}",
+    "output_para": [
+      "target_object_location"
+    ],
+    "done_when_all": [
+      "return.target_object_location"
+    ],
+    "base_actions": [
+      {
+        "action": "go to <receptacle>",
+        "when": "Choose a receptacle id from memory.unsearched_receptacle_ids (prefer the FIRST element). MUST NOT go to any id not in memory.unsearched_receptacle_ids."
+      },
+      {
+        "action": "open <receptacle>",
+        "when": "If observation says '<receptacle> is closed', you MUST open it BEFORE going to any other receptacle."
+      }
+    ],
+    "executor_sys_rules": [
+      "If observation contains '<id> is closed', you MUST output: open <id>.",
+      "If memory.unsearched_receptacle_ids is non-empty, you MUST output: go to <FIRST element of memory.unsearched_receptacle_ids>.",
+      "Do NOT take/move objects in this subtask. If the target is not found, keep searching. NEVER output fake actions like 'complete subtask'."
+    ],
+    "caller_mapping": {
+      "inject_context_from_task_state": [],
+      "map_context_to_memory": [
+        {
+          "from": "target_object",
+          "to": "target_object"
+        },
+        {
+          "from": "all_receptacles",
+          "to": "unsearched_receptacle_ids"
+        }
+      ]
+    },
+    "patch_ops_policy": {
+      "allowed": [
+        {
+          "op": "list_remove",
+          "path": "memory.unsearched_receptacle_ids"
+        },
+        {
+          "op": "set",
+          "path": "return.target_object_location"
+        }
+      ]
+    },
+    "sys_output_format": "NOTE: Output JSON only. You do NOT output context.\n\n[OUTPUT PROTOCOL]\n- Return JSON ONLY.\n- Top-level MUST be an object with key \"patch_ops\" (a list).\n- Even for ONE op, you MUST wrap it: {\"patch_ops\":[{...}]}\n- If you output a single op object without \"patch_ops\", the program will DISCARD your update.\n\n[OUTPUT FORMAT]\n{\n  \"patch_ops\": [\n    {\n      \"op\": \"<set|list_remove>\",\n      \"path\": \"<return.target_object_location | memory.unsearched_receptacle_ids>\",\n      \"value\": \"<json value>\"\n    }\n  ]\n}",
+    "operation_space": "set_location:\n- precondition:\n  - OBSERVATION contains \"You arrive at <receptacle_id>.\" (use this to extract <receptacle_id>).\n  - OBSERVATION contains the exact target object id \"<target_object> <n>\" (case-insensitive; example: \"bowl 1\").\n- function: set return.target_object_location = \"<target_object_id> at <receptacle_id>\".\n- MUST output: {\"patch_ops\":[{\"op\":\"set\",\"path\":\"return.target_object_location\",\"value\":\"bowl 1 at countertop 3\"}]}\n- If X (<receptacle_id>) is in memory.unsearched_receptacle_ids, you SHOULD include list_remove in the SAME response:\n  {\"patch_ops\":[{\"op\":\"set\",\"path\":\"return.target_object_location\",\"value\":\"bowl 1 at countertop 3\"},{\"op\":\"list_remove\",\"path\":\"memory.unsearched_receptacle_ids\",\"value\":\"countertop 3\"}]}\n- CRITICAL: If OBSERVATION contains any \"<target_object> <n>\", you MUST output set_location and MUST NOT output only list_remove.\n\ndelete_frontier_on_arrive:\n- precondition:\n  - Let X be the id extracted from OBSERVATION string \"You arrive at X.\".\n  - OBSERVATION does NOT contain any \"<target_object> <n>\".\n  - OBSERVATION contains \"On the X, you see\" OR \"In the X, you see\". (means you inspected it)\n  - OBSERVATION does NOT contain \"X is closed\".\n- function: remove X from memory.unsearched_receptacle_ids.\n- MUST output: {\"patch_ops\":[{\"op\":\"list_remove\",\"path\":\"memory.unsearched_receptacle_ids\",\"value\":\"desk 2\"}]}\n\ndelete_frontier_on_open:\n- precondition:\n  - LAST_ACTION starts with \"open \".\n  - OBSERVATION starts with \"You open the \".\n  - OBSERVATION does NOT contain any \"<target_object> <n>\".\n- how to get X:\n  - Prefer parsing X from LAST_ACTION \"open X\".\n  - If that fails, parse X from OBSERVATION \"You open the X.\".\n- function: remove X from memory.unsearched_receptacle_ids.\n- MUST output: {\"patch_ops\":[{\"op\":\"list_remove\",\"path\":\"memory.unsearched_receptacle_ids\",\"value\":\"cabinet 2\"}]}\n\n[SELECTION POLICY]\n- Evaluate set_location FIRST. If its precondition holds, you MUST output set_location (and include list_remove if applicable).\n- Else evaluate delete_frontier_on_open. If its precondition holds, you MUST output delete_frontier_on_open.\n- Else evaluate delete_frontier_on_arrive. If its precondition holds, you MUST output delete_frontier_on_arrive.\n- Only if none holds, output {\"patch_ops\":[]}.",
+    "operation_space_full_state": "set_location:\n- precondition:\n  - OBSERVATION contains \"You arrive at <receptacle_id>.\" and target id \"<target_object> <n>\".\n- state effect:\n  - set return.target_object_location = \"<target_object_id> at <receptacle_id>\".\n  - if <receptacle_id> is in memory.unsearched_receptacle_ids, remove it.\n- CRITICAL: if target id is detected, you MUST apply set_location effect (not only frontier removal).\n\ndelete_frontier_on_open:\n- precondition:\n  - LAST_ACTION starts with \"open \" and OBSERVATION starts with \"You open the \".\n  - target id is not detected in observation.\n- state effect: remove X from memory.unsearched_receptacle_ids (X parsed from LAST_ACTION or OBSERVATION).\n\ndelete_frontier_on_arrive:\n- precondition:\n  - OBSERVATION has \"You arrive at X.\" and indicates inspected contents without target id and without \"X is closed\".\n- state effect: remove X from memory.unsearched_receptacle_ids.\n\n[SELECTION POLICY]\n- Evaluate set_location FIRST. If true, apply set_location effects.\n- Else evaluate delete_frontier_on_open. If true, apply it.\n- Else evaluate delete_frontier_on_arrive. If true, apply it.\n- Else return subtask_state unchanged.",
+    "subtask_status_schema": {
+      "core": {
+        "subtask_type": "SEARCH_OBJECT",
+        "status": "running|done|failed",
+        "step_count": 0
+      },
+      "context": {
+        "target_object": null,
+        "all_receptacles": []
+      },
+      "memory": {
+        "target_object": null,
+        "unsearched_receptacle_ids": []
+      },
+      "return": {
+        "target_object_location": null,
+        "subtask_accomplished": false
+      }
+    }
+  },
+  "TAKE_OBJECT": {
+    "goal_template": "a {target_object} in inventory",
+    "output_para": [
+      "inventory"
+    ],
+    "done_when_all": [
+      "return.inventory"
+    ],
+    "base_actions": [
+      {
+        "action": "go to <receptacle>",
+        "when": "Go to the receptacle suggested by target_object_location (memory location hint) or where you last saw the target."
+      },
+      {
+        "action": "open <receptacle>",
+        "when": "If the receptacle is a container and observation says it is closed, open it before taking."
+      },
+      {
+        "action": "take <object> from <receptacle>",
+        "when": "Use the concrete object id and receptacle id when visible in observation."
+      },
+      {
+        "action": "inventory",
+        "when": "Immediately after a take attempt, use inventory to confirm you have the object."
+      }
+    ],
+    "executor_sys_rules": [
+      "If observation contains '<id> is closed', you MUST output: open <id> before taking from it.",
+      "You MUST only take the target object from memory.target_object_location. If observation does not show the target at that location, do NOT take.",
+      "If observation shows the target object id at memory.target_object_location, you MUST output: take <object_id> from <receptacle_id> (copy exact ids from observation)."
+    ],
+    "caller_mapping": {
+      "inject_context_from_task_state": [],
+      "map_context_to_memory": [
+        {
+          "from": "target_object",
+          "to": "target_object"
+        },
+        {
+          "from": "target_object_location",
+          "to": "target_object_location"
+        },
+        {
+          "from": "inventory",
+          "to": "inventory_snapshot"
+        }
+      ]
+    },
+    "patch_ops_policy": {
+      "allowed": [
+        {
+          "op": "set",
+          "path": "return.inventory"
+        }
+      ]
+    },
+    "sys_output_format": "NOTE: Output JSON only. You do NOT output context.\n\n[OUTPUT PROTOCOL]\n- Return JSON ONLY.\n- Top-level MUST be an object with key \"patch_ops\" (a list).\n- Even for ONE op, you MUST wrap it: {\"patch_ops\":[{...}]}\n- If you output a single op object without \"patch_ops\", the program will DISCARD your update.\n\n[OUTPUT FORMAT]\n{\n  \"patch_ops\": [\n    {\n      \"op\": \"<set>\",\n      \"path\": \"<return.inventory>\",\n      \"value\": \"<json value>\"\n    }\n  ]\n}",
+    "operation_space": "set_inventory_from_pickup_observation:\n- precondition: OBSERVATION contains \"You pick up\".\n- function: set return.inventory to core.inventory.\n- MUST output: {\"patch_ops\":[{\"op\":\"set\",\"path\":\"return.inventory\",\"value\":[\"mug 1\"]}]}\n\nset_inventory_from_core_inventory:\n- precondition: core.inventory contains any \"<target_object> <n>\".\n- function: set return.inventory to core.inventory.\n- MUST output: {\"patch_ops\":[{\"op\":\"set\",\"path\":\"return.inventory\",\"value\":[\"mug 1\"]}]}\n\nset_inventory_from_inventory_cmd:\n- precondition: LAST_ACTION is \"inventory\" AND OBSERVATION starts with \"You are carrying:\".\n- function: set return.inventory to the full list in OBSERVATION.\n- MUST output: {\"patch_ops\":[{\"op\":\"set\",\"path\":\"return.inventory\",\"value\":[\"mug 1\"]}]}\n\n[SELECTION POLICY]\n- Prefer set_inventory_from_pickup_observation.\n- Else if core.inventory contains target, use set_inventory_from_core_inventory.\n- Else if LAST_ACTION is \"inventory\", use set_inventory_from_inventory_cmd.\n- Else output {\"patch_ops\":[]}.",
+    "operation_space_full_state": "set_inventory_from_pickup_observation:\n- precondition: OBSERVATION contains \"You pick up\".\n- state effect: set return.inventory = core.inventory in returned subtask_state.\n\nset_inventory_from_core_inventory:\n- precondition: core.inventory contains any \"<target_object> <n>\".\n- state effect: set return.inventory = core.inventory.\n\nset_inventory_from_inventory_cmd:\n- precondition: LAST_ACTION is \"inventory\" AND OBSERVATION starts with \"You are carrying:\".\n- state effect: set return.inventory to parsed inventory list from OBSERVATION.\n\n[SELECTION POLICY]\n- Prefer set_inventory_from_pickup_observation.\n- Else if core.inventory contains target, apply set_inventory_from_core_inventory.\n- Else if LAST_ACTION is \"inventory\", apply set_inventory_from_inventory_cmd.\n- Else return subtask_state unchanged.",
+    "subtask_status_schema": {
+      "core": {
+        "subtask_type": "TAKE_OBJECT",
+        "status": "running|done|failed",
+        "step_count": 0
+      },
+      "context": {
+        "target_object": null,
+        "secondary_object_location": null,
+        "target_object_location": null,
+        "inventory": []
+      },
+      "memory": {
+        "target_object": null,
+        "target_object_location": null,
+        "inventory_snapshot": []
+      },
+      "return": {
+        "inventory": [],
+        "subtask_accomplished": false
+      }
+    }
+  },
+  "TAKE_OBJECT_SECONDARY": {
+    "goal_template": "a {target_object} in inventory",
+    "input_para": [
+      "target_object",
+      "secondary_object_location"
+    ],
+    "output_para": [
+      "inventory"
+    ],
+    "done_when_all": [
+      "return.inventory"
+    ],
+    "base_actions": [
+      {
+        "action": "go to <receptacle>",
+        "when": "Go to the receptacle suggested by target_object_location (memory location hint) or where you last saw the target."
+      },
+      {
+        "action": "open <receptacle>",
+        "when": "If the receptacle is a container and observation says it is closed, open it before taking."
+      },
+      {
+        "action": "take <object> from <receptacle>",
+        "when": "Use the concrete object id and receptacle id when visible in observation."
+      },
+      {
+        "action": "inventory",
+        "when": "Immediately after a take attempt, use inventory to confirm you have the object."
+      }
+    ],
+    "executor_sys_rules": [
+      "If observation contains '<id> is closed', you MUST output: open <id> before taking from it.",
+      "You MUST only take the target object from memory.target_object_location. If observation does not show the target at that location, do NOT take.",
+      "If observation shows the target object id at memory.target_object_location, you MUST output: take <object_id> from <receptacle_id> (copy exact ids from observation)."
+    ],
+    "caller_mapping": {
+      "inject_context_from_task_state": [],
+      "map_context_to_memory": [
+        {
+          "from": "target_object",
+          "to": "target_object"
+        },
+        {
+          "from": "secondary_object_location",
+          "to": "target_object_location"
+        },
+        {
+          "from": "inventory",
+          "to": "inventory_snapshot"
+        }
+      ]
+    },
+    "patch_ops_policy": {
+      "allowed": [
+        {
+          "op": "set",
+          "path": "return.inventory"
+        }
+      ]
+    },
+    "sys_output_format": "NOTE: Output JSON only. You do NOT output context.\n\n[OUTPUT PROTOCOL]\n- Return JSON ONLY.\n- Top-level MUST be an object with key \"patch_ops\" (a list).\n- Even for ONE op, you MUST wrap it: {\"patch_ops\":[{...}]}\n- If you output a single op object without \"patch_ops\", the program will DISCARD your update.\n\n[OUTPUT FORMAT]\n{\n  \"patch_ops\": [\n    {\n      \"op\": \"<set>\",\n      \"path\": \"<return.inventory>\",\n      \"value\": \"<json value>\"\n    }\n  ]\n}",
+    "operation_space": "set_inventory_from_pickup_observation:\n- precondition: OBSERVATION contains \"You pick up\".\n- function: set return.inventory to core.inventory.\n- MUST output: {\"patch_ops\":[{\"op\":\"set\",\"path\":\"return.inventory\",\"value\":[\"mug 1\"]}]}\n\nset_inventory_from_core_inventory:\n- precondition: core.inventory contains any \"<target_object> <n>\".\n- function: set return.inventory to core.inventory.\n- MUST output: {\"patch_ops\":[{\"op\":\"set\",\"path\":\"return.inventory\",\"value\":[\"mug 1\"]}]}\n\nset_inventory_from_inventory_cmd:\n- precondition: LAST_ACTION is \"inventory\" AND OBSERVATION starts with \"You are carrying:\".\n- function: set return.inventory to the full list in OBSERVATION.\n- MUST output: {\"patch_ops\":[{\"op\":\"set\",\"path\":\"return.inventory\",\"value\":[\"mug 1\"]}]}\n\n[SELECTION POLICY]\n- Prefer set_inventory_from_pickup_observation.\n- Else if core.inventory contains target, use set_inventory_from_core_inventory.\n- Else if LAST_ACTION is \"inventory\", use set_inventory_from_inventory_cmd.\n- Else output {\"patch_ops\":[]}.",
+    "operation_space_full_state": "set_inventory_from_pickup_observation:\n- precondition: OBSERVATION contains \"You pick up\".\n- state effect: set return.inventory = core.inventory in returned subtask_state.\n\nset_inventory_from_core_inventory:\n- precondition: core.inventory contains any \"<target_object> <n>\".\n- state effect: set return.inventory = core.inventory.\n\nset_inventory_from_inventory_cmd:\n- precondition: LAST_ACTION is \"inventory\" AND OBSERVATION starts with \"You are carrying:\".\n- state effect: set return.inventory to parsed inventory list from OBSERVATION.\n\n[SELECTION POLICY]\n- Prefer set_inventory_from_pickup_observation.\n- Else if core.inventory contains target, apply set_inventory_from_core_inventory.\n- Else if LAST_ACTION is \"inventory\", apply set_inventory_from_inventory_cmd.\n- Else return subtask_state unchanged.",
+    "subtask_status_schema": {
+      "core": {
+        "subtask_type": "TAKE_OBJECT_SECONDARY",
+        "status": "running|done|failed",
+        "step_count": 0
+      },
+      "context": {
+        "target_object": null,
+        "target_object_location": null,
+        "inventory": []
+      },
+      "memory": {
+        "target_object": null,
+        "target_object_location": null,
+        "inventory_snapshot": []
+      },
+      "return": {
+        "inventory": [],
+        "subtask_accomplished": false
+      }
+    }
+  },
+  "SEARCH_OBJ_AND_LIGHT": {
+    "goal_template": "find location of {target_object} and {lamp_object}",
+    "goal_template_defaults": {
+      "target_object": "target object",
+      "lamp_object": "lamp"
+    },
+    "input_para": [],
+    "output_para": [
+      "target_object_location",
+      "lamp_object_location"
+    ],
+    "caller_mapping": {
+      "inject_context_from_task_state": [],
+      "map_context_to_memory": [
+        {
+          "from": "target_object",
+          "to": "target_object"
+        },
+        {
+          "from": "lamp_object",
+          "to": "lamp_object"
+        },
+        {
+          "from": "all_receptacles",
+          "to": "unsearched_receptacle_ids"
+        }
+      ]
+    },
+    "subtask_status_schema": {
+      "core": {
+        "subtask_type": "SEARCH_OBJ_AND_LIGHT",
+        "status": "running|done|failed",
+        "step_count": 0
+      },
+      "context": {
+        "target_object": "",
+        "lamp_object": "",
+        "all_receptacles": []
+      },
+      "memory": {
+        "target_object": "",
+        "lamp_object": "",
+        "unsearched_receptacle_ids": []
+      },
+      "return": {
+        "target_object_location": null,
+        "lamp_object_location": null
+      }
+    },
+    "patch_ops_policy": {
+      "allowed": [
+        {
+          "op": "set",
+          "path": "return.target_object_location"
+        },
+        {
+          "op": "set",
+          "path": "return.lamp_object_location"
+        },
+        {
+          "op": "list_remove",
+          "path": "memory.unsearched_receptacle_ids"
+        }
+      ]
+    },
+    "sys_output_format": "{ \"patch_ops\": [...] }",
+    "operation_space": "set_target_location:\n- precondition:\n  - OBSERVATION contains the exact target object id \"<target_object> <n>\".\n  - Extract receptacle X from \"You arrive at X.\".\n- function:\n  - set return.target_object_location = \"<target_object_id> at X\".\n- output example:\n  {\"patch_ops\":[{\"op\":\"set\",\"path\":\"return.target_object_location\",\"value\":\"apple 1 at desk 2\"}]}\n\nset_lamp_location:\n- precondition:\n  - OBSERVATION contains the exact lamp object id \"<lamp_object> <n>\".\n  - Extract receptacle X from \"You arrive at X.\".\n- function:\n  - set return.lamp_object_location = \"<lamp_object_id> at X\".\n- output example:\n  {\"patch_ops\":[{\"op\":\"set\",\"path\":\"return.lamp_object_location\",\"value\":\"desklamp 1 at dresser 1\"}]}\n\ndelete_frontier_on_arrive:\n- precondition:\n  - Extract X from \"You arrive at X.\".\n  - OBSERVATION contains \"On the X, you see\" OR \"In the X, you see\".\n  - OBSERVATION does NOT contain \"X is closed\".\n  - Neither target_object nor lamp_object detected in this observation.\n- function:\n  - remove X from memory.unsearched_receptacle_ids.\n- output example:\n  {\"patch_ops\":[{\"op\":\"list_remove\",\"path\":\"memory.unsearched_receptacle_ids\",\"value\":\"desk 2\"}]}\n\ndelete_frontier_on_open:\n- precondition:\n  - LAST_ACTION starts with \"open \".\n  - OBSERVATION starts with \"You open the \".\n  - OBSERVATION does NOT contain target or lamp.\n- function:\n  - Remove X parsed from LAST_ACTION (preferred) or OBSERVATION.\n- output example:\n  {\"patch_ops\":[{\"op\":\"list_remove\",\"path\":\"memory.unsearched_receptacle_ids\",\"value\":\"cabinet 1\"}]}\n\n[SELECTION POLICY]\n1. Evaluate set_target_location. If true, output it.\n2. Else evaluate set_lamp_location. If true, output it.\n3. Else evaluate delete_frontier_on_open. If true, output it.\n4. Else evaluate delete_frontier_on_arrive. If true, output it.\n5. Else output {\"patch_ops\":[]}",
+    "operation_space_full_state": "set_target_location:\n- precondition:\n  - OBSERVATION contains target object id \"<target_object> <n>\" and has \"You arrive at X.\".\n- state effect:\n  - set return.target_object_location = \"<target_object_id> at X\".\n  - if X is in memory.unsearched_receptacle_ids, remove X.\n\nset_lamp_location:\n- precondition:\n  - OBSERVATION contains lamp object id \"<lamp_object> <n>\" and has \"You arrive at X.\".\n- state effect:\n  - set return.lamp_object_location = \"<lamp_object_id> at X\".\n  - if X is in memory.unsearched_receptacle_ids, remove X.\n\ndelete_frontier_on_open:\n- precondition:\n  - LAST_ACTION starts with \"open \" and OBSERVATION starts with \"You open the \".\n  - OBSERVATION does not contain target id or lamp id.\n- state effect: remove opened receptacle id from memory.unsearched_receptacle_ids.\n\ndelete_frontier_on_arrive:\n- precondition:\n  - OBSERVATION has \"You arrive at X.\" and inspected contents without target/lamp ids and without \"X is closed\".\n- state effect: remove X from memory.unsearched_receptacle_ids.\n\n[SELECTION POLICY]\n1. Evaluate set_target_location first. If true, apply it.\n2. Else evaluate set_lamp_location. If true, apply it.\n3. Else evaluate delete_frontier_on_open. If true, apply it.\n4. Else evaluate delete_frontier_on_arrive. If true, apply it.\n5. Else return subtask_state unchanged.",
+    "done_when_all": [
+      "return.target_object_location",
+      "return.lamp_object_location"
+    ],
+    "executor_sys_rules": [
+      "Always choose the first receptacle in memory.unsearched_receptacle_ids.",
+      "Never go to a receptacle not in memory.unsearched_receptacle_ids.",
+      "Open a receptacle if observation says it is closed."
+    ],
+    "base_actions": [
+      {
+        "action": "go to <receptacle>",
+        "when": "Use the first element of memory.unsearched_receptacle_ids."
+      },
+      {
+        "action": "open <receptacle>",
+        "when": "If the receptacle is closed per observation, open it before any other navigation."
+      }
+    ]
+  },
+  "USE_LAMP": {
+    "goal_template": "use {lamp_object}",
+    "goal_template_defaults": {
+      "lamp_object": "lamp"
+    },
+    "input_para": [],
+    "output_para": [
+      "lamp_status"
+    ],
+    "caller_mapping": {
+      "inject_context_from_task_state": [],
+      "map_context_to_memory": [
+        {
+          "from": "lamp_object",
+          "to": "lamp_object"
+        },
+        {
+          "from": "lamp_object_location",
+          "to": "lamp_object_location"
+        },
+        {
+          "from": "inventory",
+          "to": "inventory"
+        }
+      ]
+    },
+    "subtask_status_schema": {
+      "core": {
+        "subtask_type": "USE_LAMP",
+        "status": "running|done|failed",
+        "step_count": 0
+      },
+      "context": {
+        "lamp_object": "",
+        "lamp_object_location": null,
+        "inventory": []
+      },
+      "memory": {
+        "lamp_object": "",
+        "lamp_object_location": null,
+        "inventory": []
+      },
+      "return": {
+        "lamp_status": null
+      }
+    },
+    "patch_ops_policy": {
+      "allowed": [
+        {
+          "op": "set",
+          "path": "return.lamp_status"
+        }
+      ]
+    },
+    "sys_output_format": "{ \"patch_ops\": [...] }",
+    "operation_space": "set_lamp_on:\n- precondition:\n  - OBSERVATION contains \"You turn on the <lamp_object_id>\".\n- function:\n  - set return.lamp_status = \"on\".\n- output example:\n  {\"patch_ops\":[{\"op\":\"set\",\"path\":\"return.lamp_status\",\"value\":\"on\"}]} \n\n[SELECTION POLICY]\n- If set_lamp_on precondition holds, output it.\n- Else output {\"patch_ops\":[]}.",
+    "operation_space_full_state": "set_lamp_on:\n- precondition:\n  - OBSERVATION contains \"You turn on the <lamp_object_id>\".\n- state effect:\n  - set return.lamp_status = \"on\" in returned subtask_state.\n\n[SELECTION POLICY]\n- If set_lamp_on precondition holds, apply it.\n- Else return subtask_state unchanged.",
+    "done_when_all": [
+      "return.lamp_status"
+    ],
+    "executor_sys_rules": [
+      "Navigate to the lamp's receptacle before using it.",
+      "Only issue 'use <lamp_object_id>' when at lamp's receptacle.",
+      "Do not attempt to take the lamp."
+    ],
+    "base_actions": [
+      {
+        "action": "go to <receptacle>",
+        "when": "If agent_position != lamp_object_location.receptacle."
+      },
+      {
+        "action": "use <lamp_object_id>",
+        "when": "Agent is at lamp_object_location.receptacle."
+      }
+    ]
+  },
+  "CLEAN_OBJECT": {
+    "goal_template": "clean {target_object}",
+    "input_para": [
+      "target_object",
+      "inventory"
+    ],
+    "output_para": [
+      "cleaned_status"
+    ],
+    "caller_mapping": {
+      "inject_context_from_task_state": [],
+      "map_context_to_memory": [
+        {
+          "from": "target_object",
+          "to": "target_object"
+        },
+        {
+          "from": "inventory",
+          "to": "inventory"
+        }
+      ]
+    },
+    "subtask_status_schema": {
+      "memory": {
+        "target_object": null,
+        "sinkbasin_id": null,
+        "inventory": []
+      },
+      "return": {
+        "cleaned_status": null
+      },
+      "core": {},
+      "context": {
+        "target_object": null,
+        "inventory": null
+      }
+    },
+    "patch_ops_policy": {
+      "allowed": [
+        {
+          "op": "set",
+          "path": "return.cleaned_status"
+        }
+      ]
+    },
+    "sys_output_format": "The subtask outputs a JSON object with a single field: cleaned_status.",
+    "operation_space": "set_cleaned_status:\n- precondition:\n  - LAST_ACTION starts with \"clean \".\n  - OBSERVATION indicates the clean action succeeded (e.g., contains \"You clean\" or a success confirmation).\n- function:\n  - set return.cleaned_status = \"clean\".\n- MUST output: {\"patch_ops\":[{\"op\":\"set\",\"path\":\"return.cleaned_status\",\"value\":\"clean\"}]}\n\n[SELECTION POLICY]\n- If set_cleaned_status precondition holds, you MUST output it.\n- Else output {\"patch_ops\":[]}.",
+    "operation_space_full_state": "set_cleaned_status:\n- precondition:\n  - LAST_ACTION starts with \"clean \" and OBSERVATION confirms clean success.\n- state effect:\n  - set return.cleaned_status = \"clean\" in returned subtask_state.\n\n[SELECTION POLICY]\n- If precondition holds, apply set_cleaned_status.\n- Else return subtask_state unchanged.",
+    "done_when_all": [
+      "return.cleaned_status"
+    ],
+    "executor_sys_rules": [
+      "If inventory contains '<target_object> <n>' and OBSERVATION indicates you are at 'sinkbasin <id>', you MUST output: clean <object_id> with <sinkbasin_id>.",
+      "The subtask may internally navigate to the sinkbasin before performing clean.",
+      "The subtask must only use base actions: go to, clean.",
+      "The subtask may not modify any fields other than return.cleaned_status."
+    ],
+    "base_actions": [
+      {
+        "action": "go to <receptacle>",
+        "when": "If sinkbasin_id is known and agent_position != sinkbasin_id (use concrete id like 'sinkbasin 1')."
+      },
+      {
+        "action": "clean <object_id> with <receptacle_id>",
+        "when": "If inventory contains target object and OBSERVATION indicates you are at a sinkbasin <id> (or agent_position == sinkbasin_id). Use concrete ids from inventory and observation."
+      }
+    ]
+  },
+  "COOL_OBJECT": {
+    "goal_template": "cool {target_object}",
+    "input_para": [
+      "target_object",
+      "inventory"
+    ],
+    "output_para": [
+      "cooled_status"
+    ],
+    "caller_mapping": {
+      "inject_context_from_task_state": [],
+      "map_context_to_memory": [
+        {
+          "from": "target_object",
+          "to": "target_object"
+        },
+        {
+          "from": "inventory",
+          "to": "inventory"
+        }
+      ]
+    },
+    "subtask_status_schema": {
+      "memory": {
+        "target_object": null,
+        "inventory": null
+      },
+      "return": {
+        "cooled_status": null
+      },
+      "core": {},
+      "context": {
+        "target_object": "string",
+        "inventory": "list[string]"
+      }
+    },
+    "patch_ops_policy": {
+      "allowed": [
+        {
+          "op": "set",
+          "path": "return.cooled_status"
+        }
+      ]
+    },
+    "sys_output_format": "{ \"patch_ops\": [...] }",
+    "operation_space": "set_cooled_status:\n- precondition:\n  - LAST_ACTION starts with \"cool \".\n  - OBSERVATION contains explicit success evidence (e.g., contains \"is now cool\" or \"You cool\").\n- function:\n  - set return.cooled_status = \"cooled\".\n- MUST output: {\"patch_ops\":[{\"op\":\"set\",\"path\":\"return.cooled_status\",\"value\":\"cooled\"}]}\n\n[SELECTION POLICY]\n- If precondition holds, output set_cooled_status.\n- Else output {\"patch_ops\":[]}.",
+    "operation_space_full_state": "set_cooled_status:\n- precondition:\n  - LAST_ACTION starts with \"cool \" and OBSERVATION has explicit cool-success evidence.\n- state effect:\n  - set return.cooled_status = \"cooled\" in returned subtask_state.\n\n[SELECTION POLICY]\n- If precondition holds, apply set_cooled_status.\n- Else return subtask_state unchanged.",
+    "done_when_all": [
+      "return.cooled_status"
+    ],
+    "executor_sys_rules": [
+      "Always navigate to fridge 1 before invoking cool.",
+      "Never attempt to open fridge 1; cooling does not require opening.",
+      "Only emit the cool action once target_object is confirmed in inventory."
+    ],
+    "base_actions": [
+      {
+        "action": "go to fridge 1",
+        "when": "When OBSERVATION does not show agent already at fridge 1."
+      },
+      {
+        "action": "cool <target_object> with fridge 1",
+        "when": "When at fridge 1 and target_object is in inventory."
+      }
+    ]
+  },
+  "HEAT_OBJECT": {
+    "goal_template": "heat {target_object}",
+    "input_para": [
+      "target_object",
+      "inventory"
+    ],
+    "output_para": [
+      "heated_status"
+    ],
+    "caller_mapping": {
+      "target_object": "task_state.target_object",
+      "inventory": "task_state.inventory",
+      "inject_context_from_task_state": [],
+      "map_context_to_memory": [
+        {
+          "from": "target_object",
+          "to": "target_object"
+        },
+        {
+          "from": "inventory",
+          "to": "inventory"
+        }
+      ]
+    },
+    "subtask_status_schema": {
+      "heated_status": "string|null",
+      "core": {},
+      "context": {
+        "target_object": "string",
+        "inventory": "list[string]"
+      },
+      "memory": {
+        "target_object": null,
+        "inventory": null
+      },
+      "return": {
+        "heated_status": "string|null"
+      }
+    },
+    "patch_ops_policy": {
+      "allowed": [
+        {
+          "op": "set",
+          "path": "return.heated_status"
+        }
+      ]
+    },
+    "sys_output_format": "Return JSON with fields: {\"patch_ops\": [...], \"subtask_accomplished\": true}. patch_ops must follow allowed ops exactly.",
+    "operation_space": "Preconditions: LAST_ACTION must include a heating action such as \"heat <target_object_id> with <microwave_id>\". OBSERVATION must contain explicit heating evidence such as \"You heat the <target_object_id>\". Allowed ops require explicit evidence. Example evidence pattern: OBSERVATION contains \"You heat the apple 1\". Example patch_ops output: [{\"op\": \"set\", \"path\": \"return.heated_status\", \"value\": \"apple 1 heated\"}]. Selection policy: apply only when such evidence exists.",
+    "operation_space_full_state": "set_heated_status:\n- precondition:\n  - LAST_ACTION is a heating action and OBSERVATION contains explicit heating-success evidence.\n- state effect:\n  - set return.heated_status to a concrete heated result string (e.g., \"apple 1 heated\").\n\n[SELECTION POLICY]\n- Apply set_heated_status only when explicit evidence exists.\n- Else return subtask_state unchanged.",
+    "done_when_all": [
+      "return.heated_status"
+    ],
+    "executor_sys_rules": [
+      "Always navigate to the microwave before issuing the heat action.",
+      "Ensure the heated object remains referenced by its exact object_id.",
+      "Confirm heating success only when OBSERVATION explicitly reports the object as hot."
+    ],
+    "base_actions": [
+      {
+        "action": "go to <microwave_id>",
+        "when": "When the agent is not at the microwave."
+      },
+      {
+        "action": "heat <target_object_id> with <microwave_id>",
+        "when": "When the object is in inventory and the agent is at the microwave."
+      }
+    ]
+  },
+  "SEARCH_TWO_OBJECT": {
+    "goal_template": "find locations of two {target_object} instances",
+    "goal_template_defaults": {
+      "target_object": "target object"
+    },
+    "goal": "find locations of two <target_object> instances",
+    "input_para": [
+      "target_object",
+      "all_receptacles"
+    ],
+    "output_para": [
+      "target_object_location",
+      "secondary_object_location"
+    ],
+    "caller_mapping": {
+      "inject_context_from_task_state": [],
+      "map_context_to_memory": [
+        {
+          "from": "target_object",
+          "to": "target_object"
+        },
+        {
+          "from": "all_receptacles",
+          "to": "unsearched_receptacle_ids"
+        }
+      ]
+    },
+    "subtask_status_schema": {
+      "memory": {
+        "target_object": null,
+        "unsearched_receptacle_ids": []
+      },
+      "return": {
+        "target_object_location": "string|null",
+        "secondary_object_location": "string|null"
+      },
+      "core": {},
+      "context": {
+        "target_object": null,
+        "all_receptacles": []
+      }
+    },
+    "patch_ops_policy": {
+      "allowed": [
+        {
+          "op": "set",
+          "path": "return.target_object_location"
+        },
+        {
+          "op": "set",
+          "path": "return.secondary_object_location"
+        },
+        {
+          "op": "list_remove",
+          "path": "memory.unsearched_receptacle_ids"
+        }
+      ]
+    },
+    "sys_output_format": "NOTE: Output JSON only. You do NOT output context.\n\n[OUTPUT PROTOCOL]\n- Return JSON ONLY.\n- Top-level MUST be an object with key \"patch_ops\" (a list).\n- Even for ONE op, you MUST wrap it: {\"patch_ops\":[{...}]}\n- If you output a single op object without \"patch_ops\", the program will DISCARD your update.\n\n[OUTPUT FORMAT]\n{\n  \"patch_ops\": [\n    {\n      \"op\": \"<set|list_remove>\",\n      \"path\": \"<return.target_object_location | return.secondary_object_location | memory.unsearched_receptacle_ids>\",\n      \"value\": \"<json value>\"\n    }\n  ]\n}",
+    "operation_space": "set_location:\n- precondition:\n  - OBSERVATION has \"You arrive at <recep>.\" AND contains \"<target_object> <n>\".\n- function:\n  - If return.target_object_location is null: set it to \"<target_object_id> at <recep>\".\n  - Else if return.secondary_object_location is null: set it to \"<target_object_id> at <recep>\".\n- If <recep> is in memory.unsearched_receptacle_ids, include list_remove in the SAME response.\n\ndelete_frontier_on_open:\n- precondition:\n  - LAST_ACTION starts with \"open \".\n  - OBSERVATION starts with \"You open the \".\n  - OBSERVATION does NOT contain any \"<target_object> <n>\".\n- function: remove the opened receptacle from memory.unsearched_receptacle_ids.\n\ndelete_frontier_on_arrive:\n- precondition:\n  - OBSERVATION has \"You arrive at X.\".\n  - OBSERVATION contains \"On the X, you see\" OR \"In the X, you see\".\n  - OBSERVATION does NOT contain any \"<target_object> <n>\".\n  - OBSERVATION does NOT contain \"X is closed\".\n- function: remove X from memory.unsearched_receptacle_ids.\n\n[SELECTION POLICY]\n- Evaluate set_location FIRST. If its precondition holds, you MUST output set_location (and include list_remove if applicable).\n- Else evaluate delete_frontier_on_open. If its precondition holds, you MUST output delete_frontier_on_open.\n- Else evaluate delete_frontier_on_arrive. If its precondition holds, you MUST output delete_frontier_on_arrive.\n- Only if none holds, output {\"patch_ops\":[]}.",
+    "operation_space_full_state": "set_location:\n- precondition:\n  - OBSERVATION has \"You arrive at <recep>.\" and contains \"<target_object> <n>\".\n- state effect:\n  - If return.target_object_location is null, set it to \"<target_object_id> at <recep>\".\n  - Else if return.secondary_object_location is null, set it to \"<target_object_id> at <recep>\".\n  - If <recep> is in memory.unsearched_receptacle_ids, remove it.\n\ndelete_frontier_on_open:\n- precondition:\n  - LAST_ACTION starts with \"open \" and OBSERVATION starts with \"You open the \".\n  - OBSERVATION does not contain \"<target_object> <n>\".\n- state effect: remove opened receptacle from memory.unsearched_receptacle_ids.\n\ndelete_frontier_on_arrive:\n- precondition:\n  - OBSERVATION has \"You arrive at X.\" with inspected contents and no target id and no \"X is closed\".\n- state effect: remove X from memory.unsearched_receptacle_ids.\n\n[SELECTION POLICY]\n- Evaluate set_location FIRST. If true, apply it (and frontier removal if applicable).\n- Else evaluate delete_frontier_on_open. If true, apply it.\n- Else evaluate delete_frontier_on_arrive. If true, apply it.\n- Else return subtask_state unchanged.",
+    "done_when_all": [
+      "return.target_object_location",
+      "return.secondary_object_location"
+    ],
+    "executor_sys_rules": [
+      "Traversal ends once both object locations are found.",
+      "Receptacles must be visited in the order given by unsearched_receptacle_ids.",
+      "If a receptacle is closed, use 'open <receptacle>' before scanning."
+    ],
+    "base_actions": [
+      {
+        "action": "go to <receptacle_id>",
+        "when": "receptacle_id is the next element in memory.unsearched_receptacle_ids"
+      },
+      {
+        "action": "open <receptacle_id>",
+        "when": "agent is at receptacle_id AND receptacle is closed"
+      },
+      {
+        "action": "look",
+        "when": "agent is at the receptacle and scanning for target_object"
+      }
+    ]
+  }
+}

@@ -1,0 +1,51 @@
+0  # look_at_obj_in_light-AlarmClock-None-DeskLamp-308 :: examine the alarmclock with the desklamp.
+1  # look_at_obj_in_light-Book-None-DeskLamp-308 :: examine the book with the desklamp.
+2  # look_at_obj_in_light-Bowl-None-DeskLamp-308 :: examine the bowl with the desklamp.
+3  # look_at_obj_in_light-CD-None-DeskLamp-308 :: examine the cd with the desklamp.
+4  # look_at_obj_in_light-Mug-None-DeskLamp-308 :: examine the mug with the desklamp.
+5  # look_at_obj_in_light-Pencil-None-DeskLamp-308 :: examine the pencil with the desklamp.
+6  # pick_and_place_simple-Mug-None-Desk-308 :: put a mug in desk.
+7  # pick_and_place_simple-Pencil-None-Shelf-308 :: put a pencil in shelf.
+8  # pick_and_place_simple-PepperShaker-None-Drawer-10 :: put a peppershaker in drawer.
+9  # pick_and_place_simple-SaltShaker-None-Cabinet-10 :: put a saltshaker in cabinet.
+10  # pick_and_place_simple-SaltShaker-None-Drawer-10 :: put a saltshaker in drawer.
+11  # pick_and_place_simple-SoapBottle-None-Toilet-424 :: put a soapbottle in toilet.
+12  # pick_and_place_simple-Vase-None-Safe-219 :: put a vase in safe.
+13  # pick_and_place_simple-Watch-None-Safe-219 :: put a watch in safe.
+14  # pick_clean_then_place_in_recep-Bowl-None-Cabinet-10 :: clean some bowl and put it in cabinet.
+15  # pick_clean_then_place_in_recep-Cloth-None-Cabinet-424 :: clean some cloth and put it in cabinet.
+16  # pick_clean_then_place_in_recep-Cloth-None-CounterTop-424 :: clean some cloth and put it in countertop.
+17  # pick_clean_then_place_in_recep-Egg-None-Microwave-10 :: clean some egg and put it in microwave.
+18  # pick_clean_then_place_in_recep-Knife-None-CounterTop-10 :: clean some knife and put it in countertop.
+19  # pick_clean_then_place_in_recep-Mug-None-CoffeeMachine-10 :: clean some mug and put it in coffeemachine.
+20  # pick_clean_then_place_in_recep-Pan-None-CounterTop-10 :: clean some pan and put it in countertop.
+21  # pick_clean_then_place_in_recep-Plate-None-CounterTop-10 :: clean some plate and put it in countertop.
+22  # pick_clean_then_place_in_recep-SoapBar-None-Cabinet-424 :: clean some soapbar and put it in cabinet.
+23  # pick_clean_then_place_in_recep-SoapBar-None-CounterTop-424 :: clean some soapbar and put it in countertop.
+24  # pick_clean_then_place_in_recep-Spatula-None-Drawer-10 :: clean some spatula and put it in drawer.
+25  # pick_cool_then_place_in_recep-Bread-None-CounterTop-10 :: cool some bread and put it in countertop.
+26  # pick_cool_then_place_in_recep-Egg-None-SinkBasin-10 :: cool some egg and put it in sinkbasin.
+27  # pick_cool_then_place_in_recep-Lettuce-None-CounterTop-10 :: cool some lettuce and put it in countertop.
+28  # pick_cool_then_place_in_recep-Lettuce-None-SinkBasin-10 :: cool some lettuce and put it in sinkbasin.
+29  # pick_cool_then_place_in_recep-Mug-None-Cabinet-10 :: cool some mug and put it in cabinet.
+30  # pick_cool_then_place_in_recep-Mug-None-CoffeeMachine-10 :: cool some mug and put it in coffeemachine.
+31  # pick_cool_then_place_in_recep-Pan-None-CounterTop-10 :: cool some pan and put it in countertop.
+32  # pick_cool_then_place_in_recep-Potato-None-Microwave-10 :: cool some potato and put it in microwave.
+33  # pick_cool_then_place_in_recep-Tomato-None-Microwave-10 :: cool some tomato and put it in microwave.
+34  # pick_heat_then_place_in_recep-Apple-None-Fridge-10 :: put a hot apple in fridge.
+35  # pick_heat_then_place_in_recep-Apple-None-GarbageCan-10 :: put a hot apple in garbagecan.
+36  # pick_heat_then_place_in_recep-Apple-None-SinkBasin-10 :: put a hot apple in sinkbasin.
+37  # pick_heat_then_place_in_recep-Cup-None-Cabinet-10 :: put a hot cup in cabinet.
+38  # pick_heat_then_place_in_recep-Egg-None-GarbageCan-10 :: put a hot egg in garbagecan.
+39  # pick_heat_then_place_in_recep-Mug-None-Cabinet-10 :: put a hot mug in cabinet.
+40  # pick_heat_then_place_in_recep-Mug-None-CoffeeMachine-10 :: put a hot mug in coffeemachine.
+41  # pick_heat_then_place_in_recep-Potato-None-GarbageCan-10 :: put a hot potato in garbagecan.
+42  # pick_heat_then_place_in_recep-Tomato-None-GarbageCan-10 :: put a hot tomato in garbagecan.
+43  # pick_two_obj_and_place-CD-None-Safe-308 :: put two cd in safe.
+44  # pick_two_obj_and_place-KeyChain-None-Safe-219 :: put two keychain in safe.
+45  # pick_two_obj_and_place-PepperShaker-None-Drawer-10 :: put two peppershaker in drawer.
+46  # pick_two_obj_and_place-Pillow-None-Sofa-219 :: put two pillow in sofa.
+47  # pick_two_obj_and_place-SoapBar-None-Cabinet-424 :: put two soapbar in cabinet.
+48  # pick_two_obj_and_place-SoapBar-None-GarbageCan-424 :: put two soapbar in garbagecan.
+49  # pick_two_obj_and_place-ToiletPaper-None-Cabinet-424 :: put two toiletpaper in cabinet.
+

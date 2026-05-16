@@ -1,0 +1,57 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+.eggs/
+*.whl
+
+# Virtual environments
+.venv/
+venv/
+
+# Logs and run outputs (generated at runtime)
+logs/
+*.log
+*.jsonl
+
+# Editor / IDE
+.vscode/
+.cursor/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Environment variables / secrets
+.env
+.env.*
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Benchmark data (provided separately)
+data/
+
+# Scripts
+scripts/
+
+# reference
+reference/
+
+# offline induction traces
+offline_ir/
+
+# Vibe Coding
+CLAUDE.md
+
+# Private Pricing scripts
+utils/pricing.py

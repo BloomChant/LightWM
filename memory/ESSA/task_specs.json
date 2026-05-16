@@ -1,0 +1,449 @@
+{
+  "__comment__": "Task-family specs for ESSA. MVP: only pick_and_place_simple. JSON only (no comments).",
+  "pick_and_place_simple": {
+    "__comment__": "Take <target_object> and move it to <target_receptacle>. Let the model judge success based on observation.",
+    "task_state_schema": {
+      "task_type": "pick_and_place_simple",
+      "goal_template": "take <target_object> and move it to <target_receptacle>",
+      "success_precondition_template": [
+        "obj_at_recep(<target_object>, <target_receptacle>)"
+      ],
+      "fields": {
+        "goal": "string",
+        "target_object": "string (surface form, e.g. apple)",
+        "target_receptacle": "string (surface form, e.g. desk)",
+        "target_receptacle_id": "string|null (a concrete destination id, e.g. 'desk 1'; best-effort inferred from target_receptacle + all_receptacles; deterministic: choose the smallest number)",
+        "all_receptacles": "list[string] (extract from initial observation: receptacles/surfaces/containers the agent can go to/open)",
+        "agent_position": "string|null (best effort, from observation)",
+        "inventory": "list[string] (update using observation after inventory/take/move)",
+        "target_object_location": "string|null (e.g. 'apple 1 at desk 2' or 'apple 1 in drawer 2')",
+        "moved_target_object_location": "list[string] (append-only history of confirmed move outcomes, e.g. ['mug 1 at desk 2'])"
+      }
+    },
+    "init_rules": [
+      "goal: MUST be a concise normalized string (e.g., \"take <obj> and move it to <recep>\").",
+      "target_object / target_receptacle: best-effort infer from GOAL.",
+      "target_receptacle_id: best-effort infer from target_receptacle + all_receptacles; deterministic: choose the smallest number.",
+      "all_receptacles: MUST include ALL receptacle/surface/container ids mentioned in INITIAL_OBSERVATION \"you see ...\" list.",
+      "all_receptacles: MUST NOT filter to only the target receptacle type (e.g., NOT only \"cabinet *\").",
+      "all_receptacles: Keep concrete ids (e.g., \"drawer 2\", \"countertop 1\"). Preserve order if possible.",
+      "all_receptacles: If too many, keep up to 80."
+    ],
+    "base_subtask_sequence": [
+      {
+        "name": "searchObject",
+        "subtask_type": "SEARCH_OBJECT",
+        "signature": "searchObject(<target_object>, <all_receptacles>) -> <target_object_location>",
+        "expects": [
+          "target_object",
+          "all_receptacles"
+        ],
+        "produces": [
+          "target_object_location"
+        ]
+      },
+      {
+        "name": "takeObject",
+        "subtask_type": "TAKE_OBJECT",
+        "signature": "takeObject(<target_object>, <target_object_location>)",
+        "expects": [
+          "target_object",
+          "target_object_location"
+        ],
+        "produces": [
+          "inventory"
+        ]
+      },
+      {
+        "name": "moveObjectToRecep",
+        "subtask_type": "MOVE_OBJECT_TO_RECEP",
+        "signature": "moveObjectToRecep(<target_object>, <target_receptacle>) -> <moved_target_object_location>",
+        "expects": [
+          "target_object",
+          "target_receptacle",
+          "inventory"
+        ],
+        "produces": [
+          "moved_target_object_location"
+        ]
+      }
+    ]
+  },
+  "look_at_obj_in_light": {
+    "task_state_schema": {
+      "fields": {
+        "goal": "string",
+        "target_object": "string",
+        "lamp_object": "string",
+        "all_receptacles": "list[string]",
+        "agent_position": "string|null",
+        "inventory": "list[string]",
+        "target_object_location": "string|null",
+        "lamp_object_location": "string|null",
+        "lamp_status": "string|null"
+      }
+    },
+    "init_rules": [
+      "goal := \"look_at_obj_in_light\".",
+      "target_object := \"\".",
+      "lamp_object := \"desklamp\".",
+      "all_receptacles := [\"desk 1\", \"bed 1\"].",
+      "agent_position := null.",
+      "inventory := [].",
+      "target_object_location := null.",
+      "lamp_object_location := null.",
+      "lamp_status := null."
+    ],
+    "base_subtask_sequence": [
+      {
+        "name": "searchBoth",
+        "subtask_type": "SEARCH_OBJ_AND_LIGHT",
+        "expects": [
+          "target_object",
+          "lamp_object",
+          "all_receptacles"
+        ],
+        "produces": [
+          "target_object_location",
+          "lamp_object_location"
+        ]
+      },
+      {
+        "name": "takeTarget",
+        "subtask_type": "TAKE_OBJECT",
+        "expects": [
+          "target_object",
+          "target_object_location"
+        ],
+        "produces": [
+          "inventory"
+        ]
+      },
+      {
+        "name": "useLamp",
+        "subtask_type": "USE_LAMP",
+        "expects": [
+          "lamp_object",
+          "lamp_object_location",
+          "inventory"
+        ],
+        "produces": [
+          "lamp_status"
+        ]
+      }
+    ]
+  },
+  "pick_clean_then_place_in_recep": {
+    "task_state_schema": {
+      "fields": {
+        "goal": "string",
+        "target_object": "string",
+        "target_receptacle": "string",
+        "target_receptacle_id": "string|null (best‑effort inference from target_receptacle + all_receptacles; choose smallest id)",
+        "all_receptacles": "list[string] (all receptacle ids parsed from initial observation)",
+        "agent_position": "string|null",
+        "inventory": "list[string]",
+        "target_object_location": "string|null",
+        "moved_target_object_location": "list[string]",
+        "cleaned_status": "string|null"
+      }
+    },
+    "init_rules": [
+      "goal: MUST be a concise normalized string derived from the task request.",
+      "target_object / target_receptacle: best-effort infer from GOAL.",
+      "target_receptacle_id: infer by matching target_receptacle against all_receptacles; if multiple match, choose the smallest numeric id.",
+      "all_receptacles: MUST include ALL receptacle/surface/container ids found in INITIAL_OBSERVATION \"you see ...\" list.",
+      "From the observations, include: \"sinkbasin 1\".",
+      "all_receptacles: MUST NOT filter by type; keep every receptacle exactly as observed.",
+      "all_receptacles: keep concrete ids and preserve order.",
+      "If more than 80 receptacles exist, truncate to 80 (not needed here)."
+    ],
+    "base_subtask_sequence": [
+      {
+        "name": "searchObject",
+        "subtask_type": "SEARCH_OBJECT",
+        "signature": "searchObject(<target_object>, <all_receptacles>) -> <target_object_location>",
+        "expects": [
+          "target_object",
+          "all_receptacles"
+        ],
+        "produces": [
+          "target_object_location"
+        ]
+      },
+      {
+        "name": "takeObject",
+        "subtask_type": "TAKE_OBJECT",
+        "signature": "takeObject(<target_object>, <target_object_location>)",
+        "expects": [
+          "target_object",
+          "target_object_location"
+        ],
+        "produces": [
+          "inventory"
+        ]
+      },
+      {
+        "name": "cleanObject",
+        "subtask_type": "CLEAN_OBJECT",
+        "signature": "cleanObject(<target_object>) -> <cleaned_status>",
+        "expects": [
+          "target_object",
+          "inventory"
+        ],
+        "produces": [
+          "cleaned_status"
+        ]
+      },
+      {
+        "name": "moveObjectToRecep",
+        "subtask_type": "MOVE_OBJECT_TO_RECEP",
+        "signature": "moveObjectToRecep(<target_object>, <target_receptacle_id>) -> <moved_target_object_location>",
+        "expects": [
+          "target_object",
+          "target_receptacle_id",
+          "inventory"
+        ],
+        "produces": [
+          "moved_target_object_location"
+        ]
+      }
+    ]
+  },
+  "pick_cool_then_place_in_recep": {
+    "task_state_schema": {
+      "fields": {
+        "goal": "string",
+        "target_object": "string",
+        "target_receptacle": "string",
+        "target_receptacle_id": "string|null (best‑effort resolved from init observation; smallest-number match)",
+        "all_receptacles": "list[string] (all receptacle IDs parsed from initial observation)",
+        "agent_position": "string|null",
+        "inventory": "list[string]",
+        "target_object_location": "string|null",
+        "moved_target_object_location": "list[string]",
+        "cooled_status": "string|null"
+      }
+    },
+    "init_rules": [
+      "goal: MUST be a concise normalized string extracted from GOAL text.",
+      "target_object / target_receptacle: best-effort infer from GOAL.",
+      "target_receptacle_id: best-effort infer from target_receptacle + all_receptacles; choose smallest-number match.",
+      "all_receptacles: MUST include ALL receptacle/surface/container ids mentioned in INITIAL_OBSERVATION \"you see ...\" list.",
+      "INITIAL_OBSERVATION shows: \"You arrive at fridge 1. The fridge 1 is closed.\" → therefore all_receptacles = [\"fridge 1\"].",
+      "Preserve concrete ids exactly; keep up to 80 if many appear."
+    ],
+    "base_subtask_sequence": [
+      {
+        "name": "searchObject",
+        "subtask_type": "SEARCH_OBJECT",
+        "signature": "searchObject(<target_object>, <all_receptacles>) -> <target_object_location>",
+        "expects": [
+          "target_object",
+          "all_receptacles"
+        ],
+        "produces": [
+          "target_object_location"
+        ]
+      },
+      {
+        "name": "takeObject",
+        "subtask_type": "TAKE_OBJECT",
+        "signature": "takeObject(<target_object>, <target_object_location>) -> <inventory>",
+        "expects": [
+          "target_object",
+          "target_object_location"
+        ],
+        "produces": [
+          "inventory"
+        ]
+      },
+      {
+        "name": "coolObject",
+        "subtask_type": "COOL_OBJECT",
+        "signature": "coolObject(<target_object>, <inventory>) -> <cooled_status>",
+        "expects": [
+          "target_object",
+          "inventory"
+        ],
+        "produces": [
+          "cooled_status"
+        ]
+      },
+      {
+        "name": "moveObjectToRecep",
+        "subtask_type": "MOVE_OBJECT_TO_RECEP",
+        "signature": "moveObjectToRecep(<target_object>, <target_receptacle>) -> <moved_target_object_location>",
+        "expects": [
+          "target_object",
+          "target_receptacle",
+          "inventory"
+        ],
+        "produces": [
+          "moved_target_object_location"
+        ]
+      }
+    ]
+  },
+  "pick_heat_then_place_in_recep": {
+    "task_state_schema": {
+      "fields": {
+        "goal": "string",
+        "target_object": "string",
+        "target_receptacle": "string",
+        "target_receptacle_id": "string|null",
+        "all_receptacles": "list[string]",
+        "agent_position": "string|null",
+        "inventory": "list[string]",
+        "target_object_location": "string|null",
+        "heated_status": "string|null",
+        "moved_target_object_location": "list[string]"
+      }
+    },
+    "init_rules": [
+      "goal: MUST be a concise normalized string (e.g., \"take <obj> heat it and move it to <recep>\").",
+      "target_object / target_receptacle: derive from GOAL only.",
+      "all_receptacles: MUST include ALL receptacle/surface/container ids in INITIAL_OBSERVATION starting with the phrase \"you see\".",
+      "From INITIAL_OBSERVATION, the only receptacle is \"countertop 1\" so all_receptacles = [\"countertop 1\"].",
+      "target_receptacle_id: infer deterministically from target_receptacle + all_receptacles (smallest matching id).",
+      "Preserve concrete ids exactly as observed.",
+      "If many receptacles appear, keep up to 80."
+    ],
+    "base_subtask_sequence": [
+      {
+        "name": "searchObject",
+        "subtask_type": "SEARCH_OBJECT",
+        "expects": [
+          "target_object",
+          "all_receptacles"
+        ],
+        "produces": [
+          "target_object_location"
+        ]
+      },
+      {
+        "name": "takeObject",
+        "subtask_type": "TAKE_OBJECT",
+        "expects": [
+          "target_object",
+          "target_object_location"
+        ],
+        "produces": [
+          "inventory"
+        ]
+      },
+      {
+        "name": "heatObject",
+        "subtask_type": "HEAT_OBJECT",
+        "expects": [
+          "target_object",
+          "inventory"
+        ],
+        "produces": [
+          "heated_status"
+        ]
+      },
+      {
+        "name": "moveObjectToRecep",
+        "subtask_type": "MOVE_OBJECT_TO_RECEP",
+        "expects": [
+          "target_object",
+          "target_receptacle",
+          "inventory"
+        ],
+        "produces": [
+          "moved_target_object_location"
+        ]
+      }
+    ]
+  },
+  "pick_two_obj_and_place": {
+    "task_state_schema": {
+      "fields": {
+        "goal": "string",
+        "target_object": "string",
+        "target_receptacle": "string",
+        "target_receptacle_id": "string|null",
+        "all_receptacles": "list[string]",
+        "agent_position": "string|null",
+        "inventory": "list[string]",
+        "target_object_location": "string|null",
+        "secondary_object_location": "string|null",
+        "moved_target_object_location": "list[string]"
+      }
+    },
+    "init_rules": [
+      "goal: MUST be a concise normalized string describing picking two objects and placing them.",
+      "target_object / target_receptacle: derive strictly from GOAL text; no inference from observation.",
+      "target_receptacle_id: if target_receptacle appears among all_receptacles, choose smallest numeric suffix; else null.",
+      "all_receptacles: MUST include every receptacle-like id from INITIAL_OBSERVATION lines beginning with 'You arrive at ...'.",
+      "all_receptacles: preserve exact ids (e.g., 'shelf 1', 'dresser 1') in order of appearance.",
+      "all_receptacles: limit to max 80 entries."
+    ],
+    "base_subtask_sequence": [
+      {
+        "name": "searchTwoObject",
+        "subtask_type": "SEARCH_TWO_OBJECT",
+        "signature": "searchTwoObject(<target_object>, <all_receptacles>) -> <target_object_location, secondary_object_location>",
+        "expects": [
+          "target_object",
+          "all_receptacles"
+        ],
+        "produces": [
+          "target_object_location",
+          "secondary_object_location"
+        ]
+      },
+      {
+        "name": "takeObjectPrimary",
+        "subtask_type": "TAKE_OBJECT",
+        "signature": "takeObject(<target_object>, <target_object_location>)",
+        "expects": [
+          "target_object",
+          "target_object_location"
+        ],
+        "produces": [
+          "inventory"
+        ]
+      },
+      {
+        "name": "movePrimaryToRecep",
+        "subtask_type": "MOVE_OBJECT_TO_RECEP",
+        "signature": "moveObjectToRecep(<target_object>, <target_receptacle_id>) -> <moved_target_object_location>",
+        "expects": [
+          "target_object",
+          "target_receptacle_id",
+          "inventory"
+        ],
+        "produces": [
+          "moved_target_object_location"
+        ]
+      },
+      {
+        "name": "takeObjectSecondary",
+        "subtask_type": "TAKE_OBJECT_SECONDARY",
+        "signature": "takeObject(<target_object>, <secondary_object_location>)",
+        "expects": [
+          "target_object",
+          "secondary_object_location"
+        ],
+        "produces": [
+          "inventory"
+        ]
+      },
+      {
+        "name": "moveSecondaryToRecep",
+        "subtask_type": "MOVE_OBJECT_TO_RECEP",
+        "signature": "moveObjectToRecep(<target_object>, <target_receptacle_id>) -> <moved_target_object_location>",
+        "expects": [
+          "target_object",
+          "target_receptacle_id",
+          "inventory"
+        ],
+        "produces": [
+          "moved_target_object_location"
+        ]
+      }
+    ]
+  }
+}
